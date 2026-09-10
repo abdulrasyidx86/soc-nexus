@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Nexus - L2 Incident Investigation &amp; Triage Console</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#060913',
+                            900: '#0b1120',
+                            850: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            rose: '#f43f5e',
+                            amber: '#f59e0b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-cyber-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-cyber-900/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <svg class="w-6 h-6 text-slate-950 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono font-black tracking-wider text-base text-slate-100 uppercase">SOC NEXUS</span>
+                        <span class="px-1.5 py-0.5 text-[10px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-800 rounded font-semibold">TIER-2 CONSOLE</span>
+                        <span class="px-1.5 py-0.5 text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800 rounded hidden sm:inline-block">TI LIVE</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 tracking-tight font-mono">UNIFIED L2 INCIDENT INVESTIGATION &amp; MULTIVARIATE TRIAGE WORKBENCH</div>
+                </div>
+            </div>
+
+            <!-- Status Indicator & Live Badges -->
+            <div class="flex items-center space-x-3">
+                <div class="hidden md:flex items-center space-x-2 px-3 py-1 bg-cyber-850 rounded-full border border-slate-800 text-xs font-mono">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 -ml-3"></span>
+                    <span class="text-slate-300">AbuseIPDB &amp; VirusTotal: CONNECTED</span>
+                </div>
+                <a href="/docs" target="_blank" class="px-2.5 py-1 text-xs font-mono bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition-all flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                    </svg>
+                    API Docs
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+        <!-- Quick Metrics Overview -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="p-4 rounded-xl bg-cyber-900/70 border border-slate-800/80 backdrop-blur-sm">
+                <div class="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Alerts Triaged</span>
+                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                </div>
+                <div class="text-2xl font-black font-mono text-slate-100 mt-1" id="metricLogsCount">0</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Sesi Analisis Berjalan</div>
+            </div>
+            <div class="p-4 rounded-xl bg-cyber-900/70 border border-slate-800/80 backdrop-blur-sm">
+                <div class="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>True Positives</span>
+                    <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                </div>
+                <div class="text-2xl font-black font-mono text-rose-400 mt-1" id="metricTpCount">0</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Confirmed Security Incidents</div>
+            </div>
+            <div class="p-4 rounded-xl bg-cyber-900/70 border border-slate-800/80 backdrop-blur-sm">
+                <div class="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>False Positives</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                </div>
+                <div class="text-2xl font-black font-mono text-emerald-400 mt-1" id="metricFpCount">0</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Whitelisted / Benign Traffic</div>
+            </div>
+            <div class="p-4 rounded-xl bg-cyber-900/70 border border-slate-800/80 backdrop-blur-sm">
+                <div class="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Correlator Engine</span>
+                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                </div>
+                <div class="text-2xl font-black font-mono text-cyan-400 mt-1" id="latencyDisplay">READY</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Stateless &amp; In-Memory</div>
+            </div>
+        </section>
+
+        <!-- Main Workspace Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- Left 5 Columns: Input & Controls Area -->
+            <div class="lg:col-span-5 space-y-5">
+
+                <!-- Input Card -->
+                <div class="p-5 rounded-xl bg-cyber-900/80 border border-slate-800/90 shadow-2xl backdrop-blur-md space-y-4">
+                    
+                    <!-- Card Header -->
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div>
+                            <h2 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-sm bg-cyan-400"></span>
+                                INPUT LOG &amp; INVESTIGATION SETUP
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Masukkan data log SIEM/NIDS, sesi Arkime, atau unggah PCAP</p>
+                        </div>
+                        <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-800/60">L2 INGESTION</span>
+                    </div>
+
+                    <!-- Alert Metadata (Optional Context) -->
+                    <div class="space-y-3 bg-cyber-950/70 p-3 rounded-lg border border-slate-800/70 text-xs">
+                        <div class="flex items-center justify-between">
+                            <div class="font-mono font-semibold text-slate-300 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Konteks Alert &amp; Investigasi
+                            </div>
+                            <span class="text-[10px] font-mono text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">Semua Kolom Opsional</span>
+                        </div>
+
+                        <!-- Row 1: Alert Title & Severity -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                                    Alert Title / Nama Peringatan <span class="text-slate-500 font-normal lowercase">(opsional)</span>
+                                </label>
+                                <input type="text" id="alertTitleInput" 
+                                    class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                    placeholder="misal: ET MALWARE CobaltStrike C2">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-mono text-slate-400 uppercase mb-1">Tingkat Severity</label>
+                                <select id="severitySelect" class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500">
+                                    <option value="">AUTO-DETECT (Deteksi Otomatis dari IoC)</option>
+                                    <option value="CRITICAL">CRITICAL</option>
+                                    <option value="HIGH">HIGH</option>
+                                    <option value="MEDIUM">MEDIUM</option>
+                                    <option value="LOW">LOW</option>
+                                    <option value="INFORMATIONAL">INFORMATIONAL</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: DNS Response Code (with Tooltip & Explanation) -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[10px] font-mono text-slate-400 uppercase flex items-center gap-1">
+                                    DNS Response Code
+                                    <span class="text-slate-500 font-normal lowercase">(opsional)</span>
+                                </label>
+                                <!-- Info Tooltip -->
+                                <div class="relative group cursor-help">
+                                    <span class="px-1.5 py-0.5 text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-800 rounded flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Status Resolver ?
+                                    </span>
+                                    <div class="absolute right-0 bottom-full mb-1.5 hidden group-hover:block w-72 p-2.5 bg-slate-900/95 border border-cyan-700/80 rounded-lg shadow-2xl text-[11px] font-mono text-slate-200 leading-relaxed z-30 backdrop-blur-md">
+                                        <span class="text-cyan-300 font-bold block mb-1">Status Jawaban DNS Resolver:</span>
+                                        Status respons dari DNS resolver internal/organisasi terhadap kueri domain target pada alert:
+                                        <div class="mt-1.5 space-y-1 text-[10px]">
+                                            <div><strong class="text-emerald-400">NOERROR</strong>: Domain aktif dan resolusi IP berhasil.</div>
+                                            <div><strong class="text-amber-400">NXDOMAIN</strong>: Domain tidak ditemukan / domain DGA mati.</div>
+                                            <div><strong class="text-purple-400">0.0.0.0 / Sinkhole</strong>: Kueri dialihkan/diblokir oleh DNS sinkhole.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="text" id="dnsCodeInput" list="dnsCodeOptions"
+                                class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                placeholder="Pilih atau ketik status: NOERROR, NXDOMAIN, Sinkhole 0.0.0.0">
+                            <datalist id="dnsCodeOptions">
+                                <option value="NOERROR">NOERROR (Domain Aktif / Resolusi Berhasil)</option>
+                                <option value="NXDOMAIN">NXDOMAIN (Domain Non-Existent / DGA Mati)</option>
+                                <option value="0.0.0.0">0.0.0.0 (Sinkhole / Diblokir Security Filter)</option>
+                                <option value="SERVFAIL">SERVFAIL (Server Resolver Mengalami Kegagalan)</option>
+                            </datalist>
+                            <div class="text-[10px] text-slate-500 font-mono mt-1">
+                                Status respons DNS resolver: <span class="text-slate-400">NOERROR</span> (aktif), <span class="text-slate-400">NXDOMAIN</span> (tidak ada/mati), atau <span class="text-slate-400">0.0.0.0</span> (sinkhole).
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Catatan Analis (Explicitly Optional) -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[10px] font-mono text-slate-400 uppercase">
+                                    Catatan Analis / Histori Insiden
+                                    <span class="text-slate-500 font-normal lowercase">(opsional - boleh dikosongkan)</span>
+                                </label>
+                            </div>
+                            <input type="text" id="analystNotesInput" 
+                                class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                placeholder="(Opsional) Masukkan catatan temuan awal jika ada, atau biarkan kosong">
+                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">
+                                Jika dikosongkan, sistem otomatis mengorelasikan histori insiden dan audit 30 hari terakhir.
+                            </div>
+                        </div>
+
+                        <!-- Row 4: Ticket ID (Collapsible / Advanced Option) -->
+                        <div class="pt-1 border-t border-slate-800/60">
+                            <details class="text-slate-400 group">
+                                <summary class="cursor-pointer hover:text-cyan-400 transition-colors list-none flex items-center justify-between py-0.5 select-none">
+                                    <span class="text-[10px] font-mono flex items-center gap-1.5 text-slate-400 group-hover:text-cyan-300">
+                                        <span class="text-cyan-500 group-open:rotate-90 transition-transform">▶</span>
+                                        Tautkan ke Ticket ID Eksisting
+                                        <span class="text-[9px] text-slate-500 font-normal">(Opsional - Default: Diterbitkan Otomatis Saat Selesai Triage)</span>
+                                    </span>
+                                </summary>
+                                <div class="pt-2 pl-3 space-y-1">
+                                    <input type="text" id="ticketIdInput" 
+                                        class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                        placeholder="Kosongkan untuk nomor otomatis (misal: SOC-20260910-XXXX), atau isi ID Jira/TheHive jika sudah ada">
+                                    <div class="text-[9px] text-slate-500 font-mono">
+                                        Nomor tiket baru akan diterbitkan otomatis setelah investigasi selesai dibuat jika kolom ini dikosongkan.
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+
+                    <!-- Quick Sample Loader Bar -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Teks Log Mentah SIEM / NIDS:</span>
+                            <span class="text-[10px] font-mono text-slate-500">Klik sample cepat:</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button id="sampleTpBtn" type="button" class="px-2 py-1 text-[10px] font-mono bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 rounded transition-all flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                                [TP] Cobalt Strike C2
+                            </button>
+                            <button id="sampleFpBtn" type="button" class="px-2 py-1 text-[10px] font-mono bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60 rounded transition-all flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                [FP] Nessus Scanner Whitelist
+                            </button>
+                            <button id="samplePsBtn" type="button" class="px-2 py-1 text-[10px] font-mono bg-cyber-850 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded transition-all">
+                                PowerShell 4688
+                            </button>
+                            <button id="sampleWebBtn" type="button" class="px-2 py-1 text-[10px] font-mono bg-cyber-850 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded transition-all">
+                                Web Attack
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Textarea for Raw Logs -->
+                    <div class="relative">
+                        <textarea id="logInput" rows="7" 
+                            class="w-full bg-cyber-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all resize-y leading-relaxed"
+                            placeholder="Tempelkan log mentah SIEM/NIDS (Suricata, Snort, Zeek, CEF, Syslog, Arkime Session flow, atau hash).&#10;&#10;Contoh:&#10;09/10/2026-15:30:12 [**] [1:2001219] ET MALWARE CobaltStrike [**] {TCP} 192.168.1.50:49152 -> 185.220.101.5:8080 query=malicious-c2-node.xyz hash=e3b0c442..."></textarea>
+                    </div>
+
+                    <!-- Supporting File Uploader (PCAP, PCAPNG, LOG, TXT) -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[11px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                </svg>
+                                Unggah Berkas Pendukung (PCAP / PCAPNG / LOG)
+                            </label>
+                            <span class="text-[10px] font-mono text-slate-500">Maks. 25 MB</span>
+                        </div>
+
+                        <div id="dropZone" class="border-2 border-dashed border-slate-700/80 hover:border-cyan-500/60 rounded-xl p-3.5 text-center cursor-pointer transition-colors bg-cyber-950/60 group">
+                            <input type="file" id="supportingFileInput" accept=".pcap,.pcapng,.cap,.log,.txt,.json" class="hidden">
+                            <div id="dropZoneContent" class="space-y-1.5">
+                                <svg class="w-6 h-6 mx-auto text-slate-500 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <div class="text-xs text-slate-300 font-medium" id="fileSelectedLabel">Klik atau seret file .pcap, .pcapng, atau .log di sini</div>
+                                <div class="text-[10px] text-slate-500 font-mono">Dukungan otomatis ekstraksi PCAP TShark &amp; pembacaan file log</div>
+                            </div>
+                            <div id="fileSelectedInfo" class="hidden items-center justify-between bg-slate-900/90 p-2 rounded-lg border border-cyan-800/50">
+                                <div class="flex items-center gap-2 text-left truncate">
+                                    <svg class="w-4 h-4 text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <div class="truncate">
+                                        <div class="text-xs font-mono text-cyan-300 truncate font-semibold" id="fileNameDisplay"></div>
+                                        <div class="text-[10px] font-mono text-slate-400" id="fileSizeDisplay"></div>
+                                    </div>
+                                </div>
+                                <button type="button" id="removeFileBtn" class="p-1 text-slate-400 hover:text-rose-400 transition-colors" title="Hapus file">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="pt-2 space-y-2.5">
+                        <!-- Primary Action: Unified L2 SOC Report -->
+                        <button id="runUnifiedBtn" type="button" 
+                            class="w-full py-3 text-xs font-mono font-bold uppercase tracking-wider text-slate-950 bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 rounded-lg shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4 text-slate-950 font-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                            JALANKAN ANALISIS L2 SOC (UNIFIED REPORT)
+                        </button>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <!-- Secondary Action: Quick Parse Log -->
+                            <button id="runLogParseBtn" type="button" 
+                                class="py-2.5 px-3 text-[11px] font-mono font-semibold text-slate-300 hover:text-white bg-cyber-850 hover:bg-slate-800 border border-slate-700/80 rounded-lg transition-all flex items-center justify-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                Parse Log Saja
+                            </button>
+
+                            <!-- Interactive Reset Button -->
+                            <button id="resetAllBtn" type="button" 
+                                class="py-2.5 px-3 text-[11px] font-mono font-semibold text-rose-400 hover:text-rose-300 bg-rose-950/30 hover:bg-rose-950/60 border border-rose-900/60 hover:border-rose-700 rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
+                                <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Reset (Clear / New)
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Quick IOC Lookup Tool -->
+                <div class="p-4 rounded-xl bg-cyber-900/60 border border-slate-800/80 shadow-md backdrop-blur-md space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            Instant IoC Reputation Lookup
+                        </h3>
+                        <span class="text-[10px] font-mono text-slate-500">AbuseIPDB &amp; VT</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <input id="lookupInput" type="text" 
+                            class="flex-1 bg-cyber-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                            placeholder="IP publik atau hash file...">
+                        <button id="lookupBtn" type="button" class="px-3 py-1.5 text-xs font-mono font-bold uppercase text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition-all">
+                            Cek
+                        </button>
+                    </div>
+                    <div id="lookupResult" class="hidden pt-1"></div>
+                </div>
+
+            </div>
+
+            <!-- Right 7 Columns: Output Panel for Structured L2 SOC Ticket -->
+            <div class="lg:col-span-7 space-y-5">
+
+                <!-- Loading State Display -->
+                <div id="loadingState" class="hidden p-12 text-center bg-cyber-900/70 rounded-xl border border-cyan-900/60 shadow-2xl backdrop-blur-md space-y-4">
+                    <div class="relative w-16 h-16 mx-auto">
+                        <div class="absolute inset-0 rounded-full border-4 border-cyan-500/20"></div>
+                        <div class="absolute inset-0 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin"></div>
+                        <div class="absolute inset-3 rounded-full border-2 border-emerald-400 border-b-transparent animate-spin animate-reverse"></div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="font-mono font-bold text-sm text-cyan-300 tracking-wider uppercase" id="loadingStatusText">
+                            MENJALANKAN INVESTIGASI L2 SOC...
+                        </div>
+                        <p class="text-xs text-slate-400 max-w-md mx-auto" id="loadingSubText">
+                            Mengorelasikan event SIEM, ekstraksi layer transport Arkime DPI, kueri DNS PCAP, serta pengayaan reputasi AbuseIPDB &amp; VirusTotal...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Empty State Display -->
+                <div id="emptyState" class="p-12 text-center bg-cyber-900/40 rounded-xl border-2 border-dashed border-slate-800/90 space-y-4">
+                    <div class="w-16 h-16 mx-auto text-slate-700 relative flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full border border-slate-800 animate-ping opacity-25"></div>
+                        <svg class="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="text-sm font-bold text-slate-300 font-mono tracking-wide uppercase">Belum Ada Investigasi Aktif</h3>
+                        <p class="text-xs text-slate-500 max-w-md mx-auto">
+                            Masukkan teks log mentah SIEM/NIDS pada formulir di sebelah kiri atau pilih salah satu tombol sample cepat, lalu klik <span class="text-cyan-400 font-mono">Jalankan Analisis L2 SOC</span>.
+                        </p>
+                    </div>
+                    <div class="pt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] font-mono text-slate-500">
+                        <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">1. Executive Summary</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">2. Detail Analysis</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">3. Komponen Analisis</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">4. Kesimpulan &amp; Justifikasi</span>
+                    </div>
+                </div>
+
+                <!-- Structured Investigation Report Section -->
+                <div id="reportSection" class="hidden space-y-5">
+
+                    <!-- Dynamic Verdict Banner -->
+                    <div id="verdictBanner" class="p-4 rounded-xl border shadow-xl transition-all duration-300 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div id="verdictIconContainer" class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-black text-lg"></div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">DISPOSISI INVESTIGASI L2:</span>
+                                    <span id="verdictStatusBadge" class="px-2 py-0.5 text-xs font-mono font-bold rounded-md uppercase tracking-wider"></span>
+                                </div>
+                                <div id="verdictSummaryText" class="text-xs text-slate-200 mt-1 font-mono font-medium"></div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0 hidden sm:block">
+                            <div class="text-[10px] font-mono text-slate-400 uppercase">Confidence Level</div>
+                            <div id="verdictConfidenceText" class="text-sm font-mono font-black text-slate-100"></div>
+                        </div>
+                    </div>
+
+                    <!-- L2 SOC Ticket Terminal Report Card -->
+                    <div class="rounded-xl bg-cyber-900/95 border border-cyan-900/50 shadow-2xl overflow-hidden">
+                        <!-- Card Header & Utilities -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-slate-950 border-b border-slate-800/90">
+                            <div class="flex items-center gap-2">
+                                <!-- Terminal dots -->
+                                <div class="flex items-center space-x-1.5 mr-2">
+                                    <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                                    <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                                    <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                                </div>
+                                <span class="font-mono text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    L2 SOC INCIDENT INVESTIGATION REPORT
+                                </span>
+                            </div>
+
+                            <!-- Action utilities -->
+                            <div class="flex items-center gap-2">
+                                <button id="copyReportBtn" type="button" 
+                                    class="px-3 py-1 text-xs font-mono bg-cyber-850 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg transition-all flex items-center gap-1.5 active:scale-95">
+                                    <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                    Salin Tiket
+                                </button>
+                                <button id="downloadReportBtn" type="button" 
+                                    class="px-3 py-1 text-xs font-mono bg-cyber-850 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg transition-all flex items-center gap-1.5 active:scale-95">
+                                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                    Unduh (.txt)
+                                </button>
+                                <span class="text-[11px] font-mono bg-slate-900 text-cyan-400 px-2 py-0.5 rounded border border-slate-800">text/plain</span>
+                            </div>
+                        </div>
+
+                        <!-- Terminal Preformatted Box -->
+                        <div class="p-4 bg-slate-950 overflow-x-auto">
+                            <pre id="reportOutputText" class="font-mono text-xs text-slate-200 leading-relaxed whitespace-pre font-mono-code selection:bg-cyan-500 selection:text-black max-h-[580px] overflow-y-auto"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Interactive IoC Breakdown Tabs & Cards -->
+                    <div class="p-5 rounded-xl bg-cyber-900/80 border border-slate-800 shadow-xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                            <h3 class="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                                </svg>
+                                Matriks Entitas &amp; Skor Reputasi IoC (Enriched)
+                            </h3>
+                            <span class="text-[10px] font-mono text-slate-400">Klik badge untuk menyalin</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <!-- Public IPs -->
+                            <div class="space-y-1.5">
+                                <div class="font-mono font-semibold text-rose-400 text-[11px] uppercase">Public IP (AbuseIPDB)</div>
+                                <div id="publicIpsBadges" class="flex flex-wrap gap-1.5 min-h-[28px]"></div>
+                            </div>
+                            <!-- Private IPs -->
+                            <div class="space-y-1.5">
+                                <div class="font-mono font-semibold text-slate-400 text-[11px] uppercase">Private / RFC 1918 IP (Protected)</div>
+                                <div id="privateIpsBadges" class="flex flex-wrap gap-1.5 min-h-[28px]"></div>
+                            </div>
+                            <!-- Domains / Queries -->
+                            <div class="space-y-1.5">
+                                <div class="font-mono font-semibold text-cyan-400 text-[11px] uppercase">Domain &amp; Target Queries</div>
+                                <div id="domainsBadges" class="flex flex-wrap gap-1.5 min-h-[28px]"></div>
+                            </div>
+                            <!-- Hashes -->
+                            <div class="space-y-1.5">
+                                <div class="font-mono font-semibold text-amber-400 text-[11px] uppercase">File Hashes (VirusTotal)</div>
+                                <div id="hashesBadges" class="flex flex-wrap gap-1.5 min-h-[28px]"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Notification Toast Element -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Minimalist Footer -->
+    <footer class="border-t border-slate-800/80 bg-cyber-900/50 py-4 text-center text-xs font-mono text-slate-500 mt-auto">
+        SOC Analyst Internal Workbench &bull; FastAPI Backend &bull; L2 Triage &amp; Multivariate Forensics &bull; Stateless &amp; Auto-Cleanup
+    </footer>
+
+    <!-- App JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
